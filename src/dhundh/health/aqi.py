@@ -3,7 +3,8 @@
 Sub-indices interpolate linearly between breakpoints; the AQI is the worst
 sub-index. PM/NO2/SO2/NH3/Pb use 24-hour means, CO/O3 the maximum 8-hour
 mean. A valid AQI needs at least 3 pollutants, one of them PM2.5 or PM10,
-each with at least 16 valid hours.
+each with at least 16 valid hours. Hours that are missing (None or NaN) or
+negative are treated as missing.
 """
 import math
 from dataclasses import dataclass
@@ -32,8 +33,8 @@ _CATEGORIES = ((50, "Good"), (100, "Satisfactory"), (200, "Moderate"), (300, "Po
 
 
 def sub_index(pollutant: Pollutant, conc: float) -> float:
-    if conc < 0:
-        raise ValueError(f"negative concentration {conc}")
+    if math.isnan(conc) or conc < 0:
+        raise ValueError(f"invalid concentration {conc}")
     bp = BREAKPOINTS[pollutant]
     if conc >= bp[-1]:
         return 500.0
@@ -52,15 +53,19 @@ def category(aqi: float) -> str:
     return "Severe"
 
 
+def _valid(values: Sequence[float | None]) -> list[float]:
+    return [x for x in values if x is not None and not math.isnan(x) and x >= 0]
+
+
 def daily_concentration(pollutant: Pollutant, hourly: Sequence[float | None]) -> float | None:
-    valid = [x for x in hourly if x is not None]
+    valid = _valid(hourly)
     if len(valid) < MIN_VALID_HOURS:
         return None
     if pollutant not in EIGHT_HOUR:
         return sum(valid) / len(valid)
     means = []
     for start in range(len(hourly) - 7):
-        window = [x for x in hourly[start : start + 8] if x is not None]
+        window = _valid(hourly[start : start + 8])
         if len(window) >= MIN_WINDOW_VALUES:
             means.append(sum(window) / len(window))
     return max(means) if means else None

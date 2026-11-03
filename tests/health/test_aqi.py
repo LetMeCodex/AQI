@@ -66,3 +66,20 @@ def test_daily_aqi_flags_capped_values():
     result = daily_aqi({"pm25": [900.0] * 24, "pm10": [200.0] * 24, "no2": [50.0] * 24})
     assert result.aqi == 500
     assert result.capped is True
+
+
+def test_sub_index_rejects_nan():
+    with pytest.raises(ValueError):
+        sub_index("pm25", float("nan"))
+
+
+def test_nan_hours_count_as_missing():
+    nan = float("nan")
+    assert daily_concentration("pm25", [nan] * 9 + [100.0] * 15) is None
+    assert daily_concentration("pm25", [nan] * 8 + [100.0] * 16) == 100.0
+
+
+def test_negative_hours_count_as_missing():
+    assert daily_concentration("pm25", [-5.0] + [100.0] * 23) == 100.0
+    result = daily_aqi({"pm25": [-5.0] + [100.0] * 23, "pm10": [200.0] * 24, "no2": [50.0] * 24})
+    assert result.aqi == 233
