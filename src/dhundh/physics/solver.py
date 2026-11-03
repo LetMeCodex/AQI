@@ -36,16 +36,14 @@ def tendency(C: Tensor, f: Forcing, grid: Grid, bc: BC) -> Tensor:
 
 
 def stable_dt(f: Forcing, grid: Grid, cfl: float = 0.5, max_dt: float = 300.0) -> float:
-    limits = [max_dt]
-    adv = (f.u.abs() / grid.dx + f.v.abs() / grid.dy).max().item()
-    if adv > 0:
-        limits.append(cfl / adv)
-    k_max = f.K.max().item()
-    if k_max > 0:
-        limits.append(cfl / (2 * k_max * (1 / grid.dx**2 + 1 / grid.dy**2)))
+    """Largest step keeping each SSP-RK2 stage positivity-preserving: the advective,
+    diffusive and deposition rates are summed, so the combined stage is a convex
+    combination of individually stable updates."""
+    rate = (f.u.abs() / grid.dx + f.v.abs() / grid.dy).max().item()
+    rate += 2 * f.K.max().item() * (1 / grid.dx**2 + 1 / grid.dy**2)
     if f.vd > 0:
-        limits.append(cfl * f.h.min().item() / f.vd)
-    return min(limits)
+        rate += f.vd / f.h.min().item()
+    return min(max_dt, cfl / rate) if rate > 0 else max_dt
 
 
 def integrate(C0: Tensor, f: Forcing, grid: Grid, t_end: float, bc: BC) -> Tensor:
