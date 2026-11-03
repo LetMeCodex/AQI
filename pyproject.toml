@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dhundh"
+version = "0.1.0"
+description = "Physics-grounded air-quality forecasting for Delhi NCR"
+requires-python = ">=3.11"
+dependencies = ["numpy>=1.26", "torch>=2.5"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["cuda: requires a CUDA GPU"]
