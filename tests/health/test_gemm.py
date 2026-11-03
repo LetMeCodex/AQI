@@ -8,6 +8,7 @@ def test_no_excess_risk_at_or_below_counterfactual():
     assert gemm_hazard_ratio(0.0) == 1.0
 
 
+# Self-consistency only: expected values were computed from these same constants.
 @pytest.mark.parametrize("pm25, expected", [(10, 1.118171), (35, 1.308554), (88.4, 1.646972), (150, 1.879718)])
 def test_reference_values(pm25, expected):
     assert gemm_hazard_ratio(pm25) == pytest.approx(expected, abs=1e-6)
