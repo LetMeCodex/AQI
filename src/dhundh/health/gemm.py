@@ -22,5 +22,7 @@ COUNTERFACTUAL = 2.4
 
 
 def gemm_hazard_ratio(pm25: float) -> float:
+    if math.isnan(pm25):
+        raise ValueError("pm25 is NaN")
     z = max(0.0, pm25 - COUNTERFACTUAL)
     return math.exp(THETA * math.log(z / ALPHA + 1) / (1 + math.exp(-(z - MU) / NU)))

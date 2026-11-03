@@ -83,3 +83,10 @@ def test_negative_hours_count_as_missing():
     assert daily_concentration("pm25", [-5.0] + [100.0] * 23) == 100.0
     result = daily_aqi({"pm25": [-5.0] + [100.0] * 23, "pm10": [200.0] * 24, "no2": [50.0] * 24})
     assert result.aqi == 233
+
+
+def test_half_up_rounding_ignores_float_noise():
+    # The 24-hour mean of 30.3 picks up float noise, so its sub-index is 50.4999..., not 50.5.
+    assert sub_index("pm25", daily_concentration("pm25", [30 * 1.01] * 24)) != 50.5
+    result = daily_aqi({"pm25": [30 * 1.01] * 24, "pm10": [10.0] * 24, "no2": [10.0] * 24})
+    assert result.aqi == 51

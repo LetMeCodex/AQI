@@ -39,7 +39,7 @@ def test_scaling_a_source_scales_its_field(setup):
 
 
 def test_sources_add_up(setup):
-    # The van Leer limiter is not exactly additive; measured deviation is 8.6e-10.
+    # The van Leer limiter is not exactly additive; measured deviation is 1.0e-9.
     run, E1, E2 = setup
     a, b, both = run(E1), run(E2), run(E1 + E2)
     assert ((both - a - b).abs().max() / both.abs().max()).item() < 1e-6

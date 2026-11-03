@@ -1,7 +1,8 @@
 """Conservative flux-form advection, MUSCL reconstruction with the van Leer limiter.
 
-Flux form conserves mass exactly; the limiter is monotone, so no new extrema
-and no negative concentrations appear at sharp fronts.
+Flux form conserves mass exactly. With the step bound in solver.stable_dt, the
+limiter keeps each stage positivity-preserving; in divergence-free flow it also
+creates no new extrema (convergent flow legitimately concentrates mass).
 """
 import torch
 from torch import Tensor

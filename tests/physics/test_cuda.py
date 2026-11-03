@@ -13,5 +13,5 @@ def test_cuda_float32_matches_cpu_float64():
     gpu, _, _, _ = puff_run(100, device="cuda", dtype=torch.float32)
     cpu, _, _, _ = puff_run(100)
     diff = (gpu.double().cpu() - cpu).abs().max() / cpu.abs().max()
-    # Measured on the RTX 4050 in prototyping: 3.2e-4 (float32 round-off over 162 steps).
-    assert diff.item() < 1e-3
+    # Measured on the RTX 4050: 4.5e-7 (float32 round-off over 173 steps).
+    assert diff.item() < 1e-5

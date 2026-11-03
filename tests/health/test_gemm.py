@@ -17,3 +17,8 @@ def test_reference_values(pm25, expected):
 def test_risk_rises_monotonically():
     values = [gemm_hazard_ratio(p) for p in range(0, 300, 5)]
     assert all(b >= a for a, b in zip(values, values[1:]))
+
+
+def test_rejects_nan():
+    with pytest.raises(ValueError):
+        gemm_hazard_ratio(float("nan"))

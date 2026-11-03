@@ -4,7 +4,7 @@ import pytest
 import torch
 
 from dhundh.physics.grid import Grid
-from dhundh.physics.solver import Forcing, integrate, stable_dt
+from dhundh.physics.solver import Forcing, integrate, stable_dt, tendency
 from tests.physics.cases import puff_run
 
 
@@ -16,7 +16,7 @@ def test_puff_matches_exact_solution_with_second_order_convergence():
     C100, exact100, _, _ = puff_run(100)
     C200, exact200, _, _ = puff_run(200)
     e100, e200 = rel_l2(C100, exact100), rel_l2(C200, exact200)
-    # Measured in prototyping: 0.0706 and 0.0180 (ratio 3.9).
+    # Measured: e100 = 0.0699, e200 = 0.0176 (ratio 3.98).
     assert e100 < 0.08
     assert e200 < 0.025
     assert e100 / e200 > 3.0
@@ -87,3 +87,36 @@ def test_all_processes_binding_stays_stable_and_positive():
     C = integrate(C0, f, grid, 3000.0, "periodic")
     assert C.min().item() > -1e-12
     assert C.max().item() <= C0.max().item() + 1e-9
+
+
+def test_step_keeps_euler_stage_positive_under_alternating_wind():
+    # Rows alternate (u=5, v=0) and (u=0, v=5); a per-cell rate bound lets one stage go negative.
+    n = 40
+    grid = Grid(nx=n, ny=n, dx=1000.0, dy=1000.0)
+    rows = torch.arange(n).unsqueeze(1).expand(n, n)
+    zero = torch.zeros(n, n)
+    f = Forcing(u=torch.where(rows % 2 == 0, 5.0, 0.0), v=torch.where(rows % 2 == 1, 5.0, 0.0),
+                K=zero, h=zero + 500.0, E=torch.zeros(1, n, n), vd=0.0)
+    C = torch.zeros(1, n, n)
+    C[0, 10, 10], C[0, 10, 11], C[0, 11, 10] = 1.0, 1e6, 1e6
+    dt = stable_dt(f, grid)
+    stage = C + dt * tendency(C, f, grid, "periodic")
+    assert stage.min().item() >= -1e-12
+
+
+def test_integrate_rejects_negative_time():
+    n = 4
+    grid = Grid(nx=n, ny=n, dx=1000.0, dy=1000.0)
+    zero = torch.zeros(n, n)
+    f = Forcing(u=zero, v=zero, K=zero, h=zero + 500.0, E=torch.zeros(1, n, n), vd=0.0)
+    with pytest.raises(ValueError):
+        integrate(torch.zeros(1, n, n), f, grid, -1.0, "periodic")
+
+
+def test_integrate_zero_time_returns_input():
+    n = 4
+    grid = Grid(nx=n, ny=n, dx=1000.0, dy=1000.0)
+    zero = torch.zeros(n, n)
+    f = Forcing(u=zero + 3.0, v=zero, K=zero, h=zero + 500.0, E=torch.zeros(1, n, n), vd=0.0)
+    C0 = torch.rand(1, n, n)
+    assert torch.equal(integrate(C0, f, grid, 0.0, "periodic"), C0)

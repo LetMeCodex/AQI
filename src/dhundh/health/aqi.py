@@ -90,5 +90,5 @@ def daily_aqi(hourly: Mapping[Pollutant, Sequence[float | None]]) -> AqiResult |
         return None
     dominant = max(subs, key=subs.get)
     value = subs[dominant]
-    aqi = math.floor(value + 0.5)
+    aqi = math.floor(round(value, 9) + 0.5)
     return AqiResult(aqi=aqi, category=category(aqi), dominant=dominant, sub_indices=subs, capped=value >= 500.0)
